@@ -4,9 +4,12 @@ Pseudo-code: guides/pseudocode/04_curator.md
 Kiểm tra:    pytest tests/test_04_curator.py
 Chạy thật:   python -m lab.curator
 """
+import json
 import re
 from pathlib import Path
 
+from .model import make_model
+from .tasks import ROOT
 from .tasks import eval_markers   # có sẵn: định danh của tác vụ đánh giá, tính lúc chạy
 
 # ---- CÓ SẴN, KHÔNG SỬA: kiểm tra và tách khối skill (phần dễ sai và liên quan bảo mật) ----------------
@@ -68,7 +71,73 @@ def curate_skills(results_dir="results", source_condition="baseline", out_dir=No
     model mặc định: make_model() (lab.model).
     Trả về: danh sách đường dẫn SKILL.md đã ghi.
     """
-    raise NotImplementedError("TODO: cài đặt curate_skills (xem guides/pseudocode/04_curator.md)")
+    out_dir = Path(out_dir) if out_dir is not None else ROOT / "skills" / "auto"
+    runs = []
+    for run_file in sorted(Path(results_dir, source_condition).glob("*/run.json")):
+        r = json.loads(run_file.read_text(encoding="utf-8"))
+        if r.get("role") != "learn":          # tuyệt đối không dùng dữ liệu tác vụ đánh giá
+            continue
+        trace_file = run_file.parent / "trace.md"
+        trace = trace_file.read_text(encoding="utf-8")[-6000:] if trace_file.exists() else ""
+        failed = [(c["name"], c.get("detail", "")) for c in r.get("checks", []) if not c.get("passed")]
+        runs.append({"task": r.get("task", run_file.parent.name), "failed": failed, "trace": trace})
+    if not any(run["failed"] for run in runs):
+        print(f"WARNING: no failed check in the learning runs of '{source_condition}'; no skill written.")
+        return []
+
+    blocks = []
+    for run in runs:
+        failed = "\n".join(f"- {name}: {detail}" for name, detail in run["failed"]) or "- (none)"
+        blocks.append(f"## Run of learning task {run['task']}\n### Failed checks (name: review-bot feedback)\n"
+                      f"{failed}\n### End of the execution trace\n{run['trace']}")
+    prompt = CURATOR_PROMPT.format(max_skills=max_skills, runs="\n\n".join(blocks))
+
+    reply = (model or make_model()).invoke(prompt)
+    text = getattr(reply, "text", None)
+    text = text if isinstance(text, str) else str(reply.content)
+
+    written = []
+    for name, skill in parse_skill_blocks(text):
+        if len(written) >= max_skills:
+            break
+        problems = validate_skill(skill, expected_name=name)
+        if problems:
+            print(f"skipped skill {name!r}: {', '.join(problems)}")
+            continue
+        path = out_dir / name / "SKILL.md"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(skill + "\n", encoding="utf-8")
+        written.append(path)
+    return written
+
+
+CURATOR_PROMPT = """You write SKILLS for a coding and data-analysis agent.
+Below are the failed checks (name and the feedback of the review bot) and the end of the execution trace
+of several runs. Find the general PROCESS mistakes and the recurring organisation conventions (not task-specific
+answers) and write at most {max_skills} short skills that help avoid these mistakes on NEW tasks of the same kind.
+Rules:
+- Skills must be general: do not mention task ids, file names of the input data of one task, or answers and
+  numbers computed from the data.
+- The feedback lines starting with "RULE:" are the house conventions of the organisation (Acme). They are not
+  written in the task statements and they apply to EVERY task of the same kind, so state each of them CONCRETELY
+  and completely in the skill (exact output file names, field names, key order, header, units, formats, sort order,
+  constant values), not as "follow the required schema". Keep the bot's examples of formats only if they show a format.
+- Also add one general step: before finishing, look for any other organisation convention the task mentions and
+  say which ones could not be found.
+- Each skill has a YAML frontmatter with `name` (lower case, hyphens) and `description` (one sentence: WHEN to use it,
+  naming the kind of task and the Acme conventions it covers),
+  followed by at most 40 lines of imperative instructions (a checklist works well).
+- Output format, exactly:
+=== SKILL: <name> ===
+---
+name: <name>
+description: <when to use>
+---
+<body>
+=== END ===
+
+{runs}
+"""
 
 
 if __name__ == "__main__":
