@@ -282,7 +282,7 @@ Các check quy ước thất bại ở **tác vụ đánh giá**, lấy từ `ru
   - Mức chênh +6 check của `skills-auto` lặp lại ở 2 lần đo tác vụ học và ở tác vụ đánh giá, và có cơ chế giải thích rõ trong vết (8.3). Vì vậy nhiều khả năng đây là hiệu ứng thật.
   - Ngược lại, mức −1 check của `subagents` ở `data-learn` chỉ xảy ra một lần. Dù có cơ chế (mất định nghĩa khi giao việc, mục 5), nó nằm trong vùng có thể là nhiễu.
   - Chênh lệch token nhỏ hơn khoảng 30% giữa các điều kiện không nên được diễn giải.
-  - Chỉ có 2 cặp lặp lại, nên ước lượng nhiễu này rất thô (xem mục 9).
+  - Thử thách 6e (phụ lục) lặp mỗi điều kiện 3 lần trên tác vụ đánh giá và xác nhận điều này: điểm giống hệt nhau ở cả 27 lần chạy (độ lệch chuẩn 0), còn token có hệ số biến thiên khoảng 46–54%.
 
 ## 9. Hạn chế và tính hợp lệ
 
@@ -290,7 +290,7 @@ Các check quy ước thất bại ở **tác vụ đánh giá**, lấy từ `ru
    - Toàn bộ kết luận dựa trên 30 check đánh giá, và mức tăng chỉ đến từ 2/3 họ tác vụ.
    - Không thể tính khoảng tin cậy có ý nghĩa, cũng không thể khái quát sang loại tác vụ khác. Ví dụ: tác vụ dài và song song được, nơi đa tác tử có thể có lợi.
 2. **Mỗi cấu hình chạy một lần, mô hình có tính ngẫu nhiên** (`LAB_TEMPERATURE=1`, mô hình không cho đặt 0).
-   - Ước lượng nhiễu chỉ dựa trên 2 cặp lặp lại (mục 8.6).
+   - Thử thách 6e cho thấy điểm trên tác vụ đánh giá không đổi qua 3 lần lặp. Tuy vậy, 3 lần lặp vẫn là ít, và chúng dùng chung một bộ skill, một mô hình và cùng thời điểm (cùng phiên bản mô hình phía nhà cung cấp).
    - Chênh lệch ±1 check (như `subagents` ở `data-learn`) không phân biệt được với nhiễu. Chỉ mức +6 check của `skills-auto`, lặp lại nhất quán, là đủ tin cậy.
 3. **Tác vụ do giảng viên thiết kế, với quy ước ẩn chỉ lộ qua phản hồi của bot.**
    - Thiết kế này làm lợi thế của skill tự sinh rất lớn: skill đơn giản là truyền lại thông tin bị giấu.
@@ -309,7 +309,7 @@ Các check quy ước thất bại ở **tác vụ đánh giá**, lấy từ `ru
 - Toàn bộ mức tăng đến từ các quy ước Acme đã thấy ở tác vụ học (6/12 check quy ước so với 0/12). Check kỹ thuật vẫn 18/18 ở mọi điều kiện.
 - Skill không giúp được quy ước mới (0/3) và còn gây chuyển giao âm khi bị đọc sai miền (skill log được áp vào tác vụ data).
 - Đa tác tử (`subagents`) không cải thiện điểm (0,60 bằng 0,60) nhưng tốn khoảng 3,75 lần token, vì lỗi ở đây là thiếu thông tin chứ không phải thiếu năng lực.
-- Đề xuất tiếp theo: buộc curator viết `description` có phạm vi hẹp, và thêm một skill quy trình "hỏi hoặc tìm quy ước của tổ chức khi đề nhắc đến chúng". Sau đó chạy lặp mỗi cấu hình ít nhất 3 lần (hướng 6e) để ước lượng nhiễu đáng tin hơn.
+- Đề xuất tiếp theo: buộc curator viết `description` có phạm vi hẹp, và thêm một skill quy trình "hỏi hoặc tìm quy ước của tổ chức khi đề nhắc đến chúng". Ngoài ra nên thử lại với một mô hình yếu hơn, nơi các check kỹ thuật chưa đạt trần, để tách tác dụng của skill quy trình khỏi tác dụng truyền quy ước.
 
 ## Phụ lục
 
@@ -323,8 +323,104 @@ Các check quy ước thất bại ở **tác vụ đánh giá**, lấy từ `ru
   7. `git commit -m "hypotheses"` (`c381226`); `git commit --allow-empty -m "freeze skills" && git tag freeze` (`4b3c13d`).
   8. `python -m lab.runner --condition baseline --tasks eval`; `python -m lab.runner --condition subagents --tasks eval`; `python -m lab.runner --condition skills-auto --tasks all`.
   9. `python scripts/verify_freeze.py` (OK); `python -m lab.compare > report/table.md`; `python scripts/check_breakdown.py`.
-- Thử thách mở rộng (nếu có): không thực hiện.
+- Thử thách mở rộng: hướng **6e – lặp để đo nhiễu**. Chi tiết ở mục *Phụ lục A* bên dưới.
 - Ghi chú khác:
   - Toàn bộ test (`pytest tests`) đạt 29/29.
   - `runner.py` dùng `agent.stream(..., stream_mode="values")` thay cho `invoke`, để vẫn giữ được vết và số đếm khi tác tử lỗi giữa chừng. Đây là mở rộng tùy chọn được gợi ý ở `03_runner.md`.
   - Mô hình trả nội dung dạng danh sách khối (gồm khối `reasoning` đã mã hóa), nên `trace.md` hiển thị nguyên các khối này. Không có khóa API trong vết.
+
+## Phụ lục A. Thử thách mở rộng 6e: lặp để đo nhiễu
+
+### A.1. Thiết kế
+
+- **Câu hỏi:** các chênh lệch trong bảng ở mục 7 có vượt nhiễu giữa các lần chạy không?
+- **Cách làm:** chạy lại mỗi điều kiện trên cả 3 tác vụ đánh giá thêm **2 lần**, sau khi đã đóng băng, với cùng bộ skill (`skills/auto/` tại tag `freeze`) và cùng mô hình (`gpt-6-luna`, `LAB_TEMPERATURE=1`, `recursion_limit=60`). Tổng cộng thêm 18 lần chạy.
+  - Lần 1 là kết quả chính thức trong `results/`.
+  - Lần 2 và 3 nằm ở thư mục riêng `results_6e/rep2/` và `results_6e/rep3/`, tách khỏi kết quả chính nên không ảnh hưởng `lab.compare` hay `verify_freeze.py`.
+- **Lệnh chạy:**
+
+  ```bash
+  for rep in rep2 rep3; do for c in baseline subagents skills-auto; do
+    python -m lab.runner --condition $c --tasks eval --results results_6e/$rep; done; done
+  python extension/aggregate_6e.py > report/extension_6e.md
+  ```
+
+- **Script tổng hợp:** `extension/aggregate_6e.py`, viết mới, không sửa tệp có sẵn. Nó tính trung bình, độ lệch chuẩn và khoảng min–max của điểm và token, tách check `rule_` khỏi check kỹ thuật, và đếm số lần mỗi check thất bại.
+
+### A.2. Số liệu
+
+#### Điểm từng lần chạy (passed/total)
+
+| Điều kiện | Tác vụ | rep1 | rep2 | rep3 | TB ± độ lệch chuẩn [min–max] |
+|---|---|---|---|---|---|
+| baseline | code-eval | 7/11 | 7/11 | 7/11 | 0.64 ± 0.00 [0.64–0.64] |
+| baseline | data-eval | 5/9 | 5/9 | 5/9 | 0.56 ± 0.00 [0.56–0.56] |
+| baseline | logs-eval | 6/10 | 6/10 | 6/10 | 0.60 ± 0.00 [0.60–0.60] |
+| subagents | code-eval | 7/11 | 7/11 | 7/11 | 0.64 ± 0.00 [0.64–0.64] |
+| subagents | data-eval | 5/9 | 5/9 | 5/9 | 0.56 ± 0.00 [0.56–0.56] |
+| subagents | logs-eval | 6/10 | 6/10 | 6/10 | 0.60 ± 0.00 [0.60–0.60] |
+| skills-auto | code-eval | 10/11 | 10/11 | 10/11 | 0.91 ± 0.00 [0.91–0.91] |
+| skills-auto | data-eval | 5/9 | 5/9 | 5/9 | 0.56 ± 0.00 [0.56–0.56] |
+| skills-auto | logs-eval | 9/10 | 9/10 | 9/10 | 0.90 ± 0.00 [0.90–0.90] |
+
+#### Tổng hợp theo điều kiện (mỗi lần lặp = trung bình 3 tác vụ đánh giá)
+
+| Điều kiện | Điểm TB mỗi lần lặp | Điểm TB ± SD [min–max] | Check `rule_` đạt mỗi lần lặp | Check kỹ thuật đạt mỗi lần lặp | Token TB/lần chạy ± SD [min–max] | Lần chạy đọc skill |
+|---|---|---|---|---|---|---|
+| baseline | 0.60, 0.60, 0.60 | 0.60 ± 0.00 [0.60–0.60] | 0/12, 0/12, 0/12 | 18/18, 18/18, 18/18 | 41,935 ± 19,373 [18,220–75,768] | 0/9 |
+| subagents | 0.60, 0.60, 0.60 | 0.60 ± 0.00 [0.60–0.60] | 0/12, 0/12, 0/12 | 18/18, 18/18, 18/18 | 167,937 ± 90,593 [85,454–357,668] | 0/9 |
+| skills-auto | 0.79, 0.79, 0.79 | 0.79 ± 0.00 [0.79–0.79] | 6/12, 6/12, 6/12 | 18/18, 18/18, 18/18 | 58,748 ± 31,855 [25,194–104,727] | 9/9 |
+
+#### Check thất bại theo số lần (trên tổng số lần lặp)
+
+| Điều kiện | Tác vụ | Check thất bại (số lần) |
+|---|---|---|
+| baseline | code-eval | `rule_changelog` (3), `rule_regression_tests` (3), `rule_type_hints` (3), `rule_version_bump` (3) |
+| baseline | data-eval | `rule_clean_csv` (3), `rule_meta_block` (3), `rule_money_in_cents` (3), `rule_sorted_keys_format` (3) |
+| baseline | logs-eval | `rule_schema_header` (3), `rule_service_names` (3), `rule_sorted_errors` (3), `rule_source_line` (3) |
+| subagents | code-eval | `rule_changelog` (3), `rule_regression_tests` (3), `rule_type_hints` (3), `rule_version_bump` (3) |
+| subagents | data-eval | `rule_clean_csv` (3), `rule_meta_block` (3), `rule_money_in_cents` (3), `rule_sorted_keys_format` (3) |
+| subagents | logs-eval | `rule_schema_header` (3), `rule_service_names` (3), `rule_sorted_errors` (3), `rule_source_line` (3) |
+| skills-auto | code-eval | `rule_version_bump` (3) |
+| skills-auto | data-eval | `rule_clean_csv` (3), `rule_meta_block` (3), `rule_money_in_cents` (3), `rule_sorted_keys_format` (3) |
+| skills-auto | logs-eval | `rule_source_line` (3) |
+
+Lần chạy có `error`: không có.
+
+Hệ số biến thiên của token (SD/TB) trên 9 lần chạy mỗi điều kiện: baseline khoảng 46%, subagents khoảng 54%, skills-auto khoảng 54%. Tỉ lệ token trung bình so với baseline:
+- `subagents`: ×4,0 (167 937 so với 41 935);
+- `skills-auto`: ×1,40 (58 748 so với 41 935).
+
+Mọi lần chạy có `error = null` và `skills_modified = false`.
+
+### A.3. So sánh với kết quả chính và phân tích cơ chế
+
+- **Điểm hoàn toàn ổn định.** 27/27 cặp (điều kiện, tác vụ, lần lặp) cho đúng cùng điểm và cùng tập check thất bại. Điểm trung bình tác vụ đánh giá: baseline 0,60, subagents 0,60, skills-auto 0,79 ở cả 3 lần, độ lệch chuẩn 0.
+  - Vì vậy mức chênh +0,19 của `skills-auto` (+6 check `rule_`) **vượt xa nhiễu**.
+  - Mức chênh 0 giữa `subagents` và `baseline` là một kết quả "không khác biệt" thật, không phải do nhiễu che mất.
+  - Lý do điểm ổn định đến vậy: mô hình đã đạt trần ở check kỹ thuật (18/18 mọi lần). Còn mỗi check quy ước gần như là biến nhị phân xác định: có thông tin (đọc skill) thì đạt, không có thì thất bại. Không có check nào nằm ở vùng "lúc đạt lúc không".
+- **Token dao động mạnh.** Ví dụ:
+  - baseline `data-eval`: 18 220 đến 35 239 token;
+  - subagents `code-eval`: 226 802 đến 357 668 token, tùy số lần giao việc (4–5 lần gọi `task`) và số vòng sửa.
+
+  Chênh lệch token giữa các điều kiện chỉ nên diễn giải khi lớn hơn nhiều so với khoảng dao động này. Mức ×4,0 của `subagents` thỏa điều kiện đó. Mức ×1,40 của `skills-auto` cũng thỏa, nhưng biên độ hẹp hơn.
+- **Hành vi đọc skill lặp lại nhất quán** (từ `trace.md`):
+  - `code-eval` luôn đọc `python-bugfix-handoff` và luôn đạt 3 quy ước code cũ.
+  - `logs-eval` luôn đọc `log-triage-output` và luôn đạt 3 quy ước log cũ.
+  - `data-eval` luôn đọc nhầm `log-triage-output`; ở lần 3 còn đọc thêm `python-bugfix-handoff`. Ở cả 3 lần, chuỗi `generated_by: "log-triage"` xuất hiện trong vết khi ghi `answer.json`; ở lần 1 và 2 thấy trực tiếp trong `write_file`.
+
+  Như vậy chuyển giao âm ở họ data không phải sự cố ngẫu nhiên mà là hành vi có hệ thống, do `description` của skill log quá rộng.
+- **Quy ước mới** (`rule_version_bump`, `rule_sorted_keys_format`, `rule_source_line`) thất bại 9/9 lần ở mọi điều kiện. Điều này xác nhận giới hạn chuyển giao của skill tự sinh (H3).
+- **Ở điều kiện `subagents`**, `subagent_calls` thay đổi giữa các lần (code-eval 4/5/5, data-eval 3/3/4, logs-eval 2/2/3) nhưng điểm không đổi. Số lần giao việc chỉ ảnh hưởng đến chi phí, không ảnh hưởng kết quả.
+
+### A.4. Hạn chế và bước tiếp theo
+
+- **Hạn chế:**
+  - Chỉ 3 lần lặp, chạy liền nhau trong cùng một ngày với cùng một phiên bản mô hình phía nhà cung cấp. Biến thiên giữa các ngày hoặc phiên bản mô hình chưa được đo.
+  - Chỉ lặp phần *chạy tác vụ* với một bộ skill cố định, không lặp *curator*. Nhiễu lớn nhất có lẽ nằm ở curator: lần 1 và lần 2 cho bộ skill khác hẳn (mục 6), nên độ ổn định ở đây không có nghĩa là quy trình tự tiến hóa ổn định.
+  - Độ lệch chuẩn bằng 0 có một phần do thiết kế tác vụ (check nhị phân, đạt trần kỹ thuật). Kết quả này không tổng quát cho tác vụ khó hơn.
+- **Bước tiếp theo:**
+  - Lặp cả curator (ví dụ 5 lần, mỗi lần một bộ skill, rồi đo trên tác vụ đánh giá) để ước lượng phương sai của toàn bộ quy trình tự tiến hóa.
+  - Thử một mô hình yếu hơn, nơi check kỹ thuật không đạt trần, để thấy nhiễu ở mức điểm.
+- **Chi phí của 6e:** 18 lần chạy, tổng 1 719 076 token, trong đó 1 086 365 token (63%) là của `subagents`.
+

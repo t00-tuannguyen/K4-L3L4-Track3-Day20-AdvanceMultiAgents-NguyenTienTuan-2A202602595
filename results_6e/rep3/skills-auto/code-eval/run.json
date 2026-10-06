@@ -1,0 +1,79 @@
+{
+  "task": "code-eval",
+  "condition": "skills-auto",
+  "role": "eval",
+  "error": null,
+  "timestamp": "2026-10-06T09:22:57.977606+00:00",
+  "skills_sha256": "8056e0b216bb9db17919f95c312d150fd704181fee470b2cd902e54b37f4f548",
+  "seconds": 73.6,
+  "tokens": {
+    "input": 99301,
+    "output": 4965,
+    "total": 104266
+  },
+  "tool_calls": 23,
+  "subagent_calls": 0,
+  "skills_read": 1,
+  "skills_modified": false,
+  "final_message": "Fixed the duration parser, billable-block rounding and validation, and `add_slot` list handling. Added regression tests and changelog entries; all 8 tests pass.\n\nChanged: `workspace/bookings/timeutil.py`, `workspace/bookings/billing.py`, `workspace/bookings/schedule.py`, `workspace/bookings/calendar_export.py`, `workspace/tests/test_regressions.py`, and `workspace/CHANGELOG.md`.\n\nNo additional Acme conventions were specified in the package documentation.",
+  "score": 0.9090909090909091,
+  "passed": 10,
+  "total": 11,
+  "checks": [
+    {
+      "name": "visible_suite_passes",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "tests_not_modified",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "parse_duration_all_formats",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "other_caller_fixed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "billable_blocks_round_up",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "add_slot_no_shared_state",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "negative_minutes_rejected",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "rule_type_hints",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "rule_regression_tests",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "rule_changelog",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "rule_version_bump",
+      "passed": false,
+      "detail": ""
+    }
+  ]
+}
